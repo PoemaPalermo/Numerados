@@ -1,3 +1,4 @@
+import random
 import ttkbootstrap as ttkb
 from ttkbootstrap.constants import *
 
@@ -18,8 +19,8 @@ def solo_numeros(txt):
     return txt.isdigit() or txt == ""
 
 def solo_simbolos(txt):
-    permitidos = "+-*/:"
-    return all(c in permitidos for c in txt) or txt == ""
+    permitidos = "+*"
+    return txt == "" or (len(txt) <= 1 and txt in permitidos)
 
 vcmd_num = (window.register(solo_numeros), "%P")
 vcmd_sym = (window.register(solo_simbolos), "%P")
@@ -41,7 +42,7 @@ def crear_num(row, col, key, disabled=False):
         validate="key",
         validatecommand=vcmd_num,
         bootstyle=SECONDARY,
-        state="disabled" if disabled else "normal"
+        state="readonly" if disabled else "normal"
     )
     e.grid(row=row, column=col, padx=4, pady=6)
     inputs_numeros[key] = var
@@ -83,12 +84,93 @@ respuestas_operadores = []
 for i in range(20):
     crear_num(11, 4 + i, f"bottom_{i}")
 
+#crerar numeros
+def calcular(a, b, op):
+    if op == "+":
+        return a + b
+    if op == "*":
+        return a * b
 
+def generar_datos():
+    numeros = random.sample(range(2, 70, 2), 20)
+
+    chicos = [n for n in numeros if n <= 50]
+    grandes = [n for n in numeros if n > 50]
+
+    random.shuffle(chicos)
+    random.shuffle(grandes)
+
+    pares = []
+
+    # grandes con chicos
+    while grandes and chicos:
+        while True:
+            a = grandes.pop()
+            b = chicos.pop()
+
+            if a * b > 999:
+                grandes.append(a)
+                chicos.append(b)
+                random.shuffle(grandes)
+                random.shuffle(chicos)
+                continue
+
+            signos = ["+", "*"]
+            random.shuffle(signos)
+
+            pares.append((a, b, signos[0]))
+            pares.append((a, b, signos[1]))
+            break
+
+    # 👇 MUY IMPORTANTE: esto va FUERA del while anterior
+    resto = chicos[:]
+    random.shuffle(resto)
+
+    while len(resto) >= 2:
+        while True:
+            a = resto.pop()
+            b = resto.pop()
+
+            if a * b > 999:
+                resto.extend([a, b])
+                random.shuffle(resto)
+                continue
+
+            signos = ["+", "*"]
+            random.shuffle(signos)
+
+            pares.append((a, b, signos[0]))
+            pares.append((a, b, signos[1]))
+            break
+
+    random.shuffle(pares)
+    respuestas_operadores = sorted(numeros)
+    return pares, respuestas_operadores
+
+def cargar_en_tablero():
+    (
+        respuestas_operadores,
+        respuestas_inputs_numeros,
+        respuestas_inputs_simbolos,
+    ) = generar_datos()
+
+    # 🔢 cargar números
+    for key, value in respuestas_inputs_numeros.items():
+        if key in inputs_numeros:
+            inputs_numeros[key].set(str(value))
+
+    # ➕ cargar símbolos
+    for key, value in respuestas_inputs_simbolos.items():
+        if key in inputs_simbolos:
+            inputs_simbolos[key].set(value)
+
+    return respuestas_operadores
+respuestas_operadores = cargar_en_tablero()
 # chequear
 # funciones
 
 # boton
-check_btn = ttkb.Button(window, text="Finished", style="success")
+check_btn = ttkb.Button(window, text="Finished", bootstyle="success")
 check_btn.grid(column=13, columnspan=4, row=13, sticky='wes')
 
 
