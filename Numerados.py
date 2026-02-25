@@ -1,28 +1,16 @@
 import ttkbootstrap as ttkb
 from ttkbootstrap.constants import *
 
-'''
-themes:
-light
-- minty
-- flatly
-- yeti
-
-dark
-- superhero
-- solar
-- darkly
-'''
 # window
-window = ttkb.Window(themename="flatly")
+window = ttkb.Window(themename="morph")
 window.geometry("1440x767")
 window.title("Numerados")
 
 # grid configuration
-for col in range(28):
+for col in range(30):
     window.columnconfigure(col, weight=1)
 
-for row in range(15):
+for row in range(16):
     window.rowconfigure(row, weight=1)
 
 # validaciones 
@@ -43,7 +31,7 @@ respuestas_inputs_numeros = {}
 respuestas_inputs_simbolos = {}
 
 # helpers 
-def crear_num(row, col, key):
+def crear_num(row, col, key, disabled=False):
     var = ttkb.StringVar()
     e = ttkb.Entry(
         window,
@@ -52,7 +40,8 @@ def crear_num(row, col, key):
         textvariable=var,
         validate="key",
         validatecommand=vcmd_num,
-        bootstyle=SECONDARY
+        bootstyle=SECONDARY,
+        state="disabled" if disabled else "normal"
     )
     e.grid(row=row, column=col, padx=4, pady=6)
     inputs_numeros[key] = var
@@ -61,7 +50,7 @@ def crear_sym(row, col, key):
     var = ttkb.StringVar()
     e = ttkb.Entry(
         window,
-        width=3,
+        width=2,
         justify="center",
         textvariable=var,
         validate="key",
@@ -77,8 +66,8 @@ def crear_equal(row, col):
     )
 
 # cuentas
-filas = [1, 3, 5, 7, 9]
-bloques = [1, 8, 15, 22]
+filas = [2, 4, 6, 8, 10]
+bloques = [2, 9, 16, 23]
 #r{fila}_b{bloque}_{tipo}
 for r_i, row in enumerate(filas):
     for b_i, base in enumerate(bloques):
@@ -87,7 +76,7 @@ for r_i, row in enumerate(filas):
         crear_sym(row, base + 1, k + "_op")
         crear_num(row, base + 2, k + "_n2")
         crear_equal(row, base + 3)
-        crear_num(row, base + 4, k + "_res")
+        crear_num(row, base + 4, k + "_res", disabled=True)
 
 # operadores
 respuestas_operadores = []
@@ -99,7 +88,30 @@ for i in range(20):
 # funciones
 
 # boton
-check_btn = ttkb.Button(window, text="Finished", style="succes")
-check_btn.grid(column=12, columnspan=4, row=13, sticky="nswe")
+check_btn = ttkb.Button(window, text="Finished", style="success")
+check_btn.grid(column=13, columnspan=4, row=13, sticky='wes')
+
+
+#agregados esteticos
+# estado del switch
+style = ttkb.Style()
+tema_var = ttkb.BooleanVar(value=False)
+
+def cambiar_tema():
+    if tema_var.get():
+        style.theme_use("solar")
+    else:
+        style.theme_use("morph")
+
+# switch
+theme_switch = ttkb.Checkbutton(
+    window,
+    text="Mode",
+    variable=tema_var,
+    command=cambiar_tema,
+    bootstyle="round-toggle"
+)
+
+theme_switch.grid(row=0, column=26, columnspan=2, sticky="e", padx=10, pady=10)
 
 window.mainloop()
