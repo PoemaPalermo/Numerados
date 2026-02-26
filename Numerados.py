@@ -28,6 +28,7 @@ vcmd_sym = (window.register(solo_simbolos), "%P")
 # almacenamiento 
 inputs_numeros = {}
 inputs_simbolos = {}
+inputs_widgets = {}
 respuestas_inputs_numeros = {}
 respuestas_inputs_simbolos = {}
 
@@ -45,7 +46,9 @@ def crear_num(row, col, key, disabled=False):
         state="readonly" if disabled else "normal"
     )
     e.grid(row=row, column=col, padx=4, pady=6)
+
     inputs_numeros[key] = var
+    inputs_widgets[key] = e
 
 def crear_sym(row, col, key):
     var = ttkb.StringVar()
@@ -92,7 +95,7 @@ def calcular(a, b, op):
         return a * b
 
 def generar_datos():
-    numeros = random.sample(range(2, 70, 2), 20)
+    numeros = random.sample(range(1, 70), 20)
 
     chicos = [n for n in numeros if n <= 50]
     grandes = [n for n in numeros if n > 50]
@@ -173,22 +176,39 @@ def cargar_en_tablero():
             a, b, op = pares[i]
             k = f"r{r_i}_b{b_i}"
 
-            # guardar respuestas correctas
+            # respuestas correctas
             respuestas_inputs_numeros[k + "_n1"] = a
             respuestas_inputs_numeros[k + "_n2"] = b
             respuestas_inputs_simbolos[k + "_op"] = op
 
-            # limpiar inputs del usuario
+            # limpiar inputs usuario
             inputs_numeros[k + "_n1"].set("")
             inputs_numeros[k + "_n2"].set("")
             inputs_simbolos[k + "_op"].set("")
 
-            # resultado visible (queda como lo tenías)
+            # resultado visible
             res = calcular(a, b, op)
             inputs_numeros[k + "_res"].set(str(res))
             respuestas_inputs_numeros[k + "_res"] = res
 
             i += 1
+
+    # Fila inferior
+    indices_revelados = set(random.sample(range(19), 6))
+    indices_revelados.add(19)
+
+    for i in range(20):
+        key = f"bottom_{i}"
+        valor = respuestas_operadores[i]
+
+        respuestas_inputs_numeros[key] = valor
+
+        if i in indices_revelados:
+            inputs_numeros[key].set(str(valor))
+            inputs_widgets[key].config(state="disabled")
+        else:
+            inputs_numeros[key].set("")
+            inputs_widgets[key].config(state="normal")
 
     return respuestas_operadores
 
@@ -198,28 +218,52 @@ respuestas_operadores = cargar_en_tablero()
 def checking():
     errores = 0
 
-    for key, var in inputs_numeros.items():
-        if key.endswith("_res"):
+    # cuentas
+    for k in respuestas_inputs_simbolos:
+        try:
+            user_a = int(inputs_numeros[k.replace("_op", "_n1")].get())
+            user_b = int(inputs_numeros[k.replace("_op", "_n2")].get())
+        except:
+            errores += 1
             continue
 
-        valor_usuario = var.get().strip()
-        valor_correcto = str(respuestas_inputs_numeros.get(key, "")).strip()
+        user_op = inputs_simbolos[k].get()
 
-        if valor_usuario != valor_correcto:
+        real_a = respuestas_inputs_numeros[k.replace("_op", "_n1")]
+        real_b = respuestas_inputs_numeros[k.replace("_op", "_n2")]
+        real_op = respuestas_inputs_simbolos[k]
+
+        # ✔ orden libre
+        if set([user_a, user_b]) != set([real_a, real_b]):
+            errores += 1
+            continue
+
+        if user_op != real_op:
             errores += 1
 
-    if errores > 0:
+    # fila inferior
+    for i in range(20):
+        key = f"bottom_{i}"
+        user_val = inputs_numeros[key].get()
+
+        if user_val == "":
+            errores += 1
+            continue
+
+        if int(user_val) != respuestas_inputs_numeros[key]:
+            errores += 1
+
+    # resultado visual
+    if errores == 0:
+        check_label.config(
+            text="¡LO LOGRASTE!",
+            bootstyle="success"
+        )
+    else:
         check_label.config(
             text=f"Te equivocaste {errores} veces",
             bootstyle="danger"
         )
-    else:
-        check_label.config(
-            text="LO LOGRASTE",
-            bootstyle="success"
-        )
-
-    return errores == 0
 
 
 # boton
@@ -227,7 +271,7 @@ check_btn = ttkb.Button(
     window,
     text="Finished",
     bootstyle="success",
-    command=checking  # ✅ sin lambda
+    command=checking
 )
 check_btn.grid(column=13, columnspan=4, row=13, sticky="wes")
 
