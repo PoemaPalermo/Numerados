@@ -104,7 +104,14 @@ def generar_datos():
 
     # grandes con chicos
     while grandes and chicos:
+        intentos = 0
         while True:
+            intentos += 1
+            if intentos > 50:
+                a = grandes.pop()
+                b = chicos.pop()
+                break
+
             a = grandes.pop()
             b = chicos.pop()
 
@@ -114,20 +121,25 @@ def generar_datos():
                 random.shuffle(grandes)
                 random.shuffle(chicos)
                 continue
-
-            signos = ["+", "*"]
-            random.shuffle(signos)
-
-            pares.append((a, b, signos[0]))
-            pares.append((a, b, signos[1]))
             break
 
-    # 👇 MUY IMPORTANTE: esto va FUERA del while anterior
+        signos = ["+", "*"]
+        random.shuffle(signos)
+        pares.append((a, b, signos[0]))
+        pares.append((a, b, signos[1]))
+
     resto = chicos[:]
     random.shuffle(resto)
 
     while len(resto) >= 2:
+        intentos = 0
         while True:
+            intentos += 1
+            if intentos > 50:
+                a = resto.pop()
+                b = resto.pop()
+                break
+
             a = resto.pop()
             b = resto.pop()
 
@@ -135,43 +147,92 @@ def generar_datos():
                 resto.extend([a, b])
                 random.shuffle(resto)
                 continue
-
-            signos = ["+", "*"]
-            random.shuffle(signos)
-
-            pares.append((a, b, signos[0]))
-            pares.append((a, b, signos[1]))
             break
+
+        signos = ["+", "*"]
+        random.shuffle(signos)
+        pares.append((a, b, signos[0]))
+        pares.append((a, b, signos[1]))
 
     random.shuffle(pares)
     respuestas_operadores = sorted(numeros)
     return pares, respuestas_operadores
 
 def cargar_en_tablero():
-    (
-        respuestas_operadores,
-        respuestas_inputs_numeros,
-        respuestas_inputs_simbolos,
-    ) = generar_datos()
+    pares, respuestas_operadores = generar_datos()
 
-    # 🔢 cargar números
-    for key, value in respuestas_inputs_numeros.items():
-        if key in inputs_numeros:
-            inputs_numeros[key].set(str(value))
+    respuestas_inputs_numeros.clear()
+    respuestas_inputs_simbolos.clear()
 
-    # ➕ cargar símbolos
-    for key, value in respuestas_inputs_simbolos.items():
-        if key in inputs_simbolos:
-            inputs_simbolos[key].set(value)
+    i = 0
+    for r_i, row in enumerate(filas):
+        for b_i, base in enumerate(bloques):
+            if i >= len(pares):
+                break
+
+            a, b, op = pares[i]
+            k = f"r{r_i}_b{b_i}"
+
+            # guardar respuestas correctas
+            respuestas_inputs_numeros[k + "_n1"] = a
+            respuestas_inputs_numeros[k + "_n2"] = b
+            respuestas_inputs_simbolos[k + "_op"] = op
+
+            # limpiar inputs del usuario
+            inputs_numeros[k + "_n1"].set("")
+            inputs_numeros[k + "_n2"].set("")
+            inputs_simbolos[k + "_op"].set("")
+
+            # resultado visible (queda como lo tenías)
+            res = calcular(a, b, op)
+            inputs_numeros[k + "_res"].set(str(res))
+            respuestas_inputs_numeros[k + "_res"] = res
+
+            i += 1
 
     return respuestas_operadores
+
 respuestas_operadores = cargar_en_tablero()
 # chequear
 # funciones
+def checking():
+    errores = 0
+
+    for key, var in inputs_numeros.items():
+        if key.endswith("_res"):
+            continue
+
+        valor_usuario = var.get().strip()
+        valor_correcto = str(respuestas_inputs_numeros.get(key, "")).strip()
+
+        if valor_usuario != valor_correcto:
+            errores += 1
+
+    if errores > 0:
+        check_label.config(
+            text=f"Te equivocaste {errores} veces",
+            bootstyle="danger"
+        )
+    else:
+        check_label.config(
+            text="LO LOGRASTE",
+            bootstyle="success"
+        )
+
+    return errores == 0
+
 
 # boton
-check_btn = ttkb.Button(window, text="Finished", bootstyle="success")
-check_btn.grid(column=13, columnspan=4, row=13, sticky='wes')
+check_btn = ttkb.Button(
+    window,
+    text="Finished",
+    bootstyle="success",
+    command=checking  # ✅ sin lambda
+)
+check_btn.grid(column=13, columnspan=4, row=13, sticky="wes")
+
+check_label = ttkb.Label(window, text="", bootstyle="danger")
+check_label.grid(column=13, columnspan=4, row=0, sticky="wes")
 
 
 #agregados esteticos
