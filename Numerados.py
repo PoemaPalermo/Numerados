@@ -2,6 +2,21 @@ import random
 import ttkbootstrap as ttkb
 from ttkbootstrap.constants import *
 
+'''
+Opciones para seguir mejorando:
+- Pistas
+- Menu de configuracion
+    - Dificultad (cantidad de numeros revelados, rango de numeros, operadores disponibles)
+    - Temporizador
+    - Guardar resultados (localmente)
+    - Generar estadisticas
+    - Sistema de validación/correcciones
+    - Sistema de puntaje(+a por aciertos, -b por errores, -c por pistas)(configurable en dificultad)
+    - Animaciones
+
+'''
+
+
 # window
 window = ttkb.Window(themename="morph")
 window.geometry("1440x767")
